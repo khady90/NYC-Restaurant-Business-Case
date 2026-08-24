@@ -1,5 +1,10 @@
-import pandas as pd 
-from nyc_risk.config import GRADABLE_INSP_TYPES, GRADABLE_ACTIONS, GRADABLE_MIN_DATE
+import pandas as pd
+from nyc_risk.config import (
+    GRADABLE_INSP_TYPES,
+    GRADABLE_ACTIONS,
+    GRADABLE_MIN_DATE,
+    RISK_MAPPING,
+)
 
 def filter_gradable_inspections(
     df: pd.DataFrame,
@@ -40,3 +45,29 @@ def filter_gradable_inspections(
         & df["action"].isin(gradable_actions)
         & (df["inspection_date"] >= pd.Timestamp(min_date))
     ]
+
+
+def assign_risk_category(
+    df: pd.DataFrame,
+    risk_mapping: dict[str, str] | None = None,
+) -> pd.DataFrame:
+    """Assign a risk category to each record based on its grade.
+
+    Args:
+        df: Inspection records. Must contain a 'grade' column.
+        risk_mapping: Mapping from grade values to risk category labels.
+            Defaults to RISK_MAPPING from config.
+
+    Returns:
+        A copy of df with a new 'risk_category' column, built by mapping
+        the 'grade' column through risk_mapping. Grades not present in
+        risk_mapping produce NaN in risk_category; no rows are filtered
+        or dropped.
+    """
+    if risk_mapping is None:
+        risk_mapping = RISK_MAPPING
+
+    df = df.copy()
+    df["risk_category"] = df["grade"].map(risk_mapping)
+
+    return df
